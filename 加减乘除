@@ -1,0 +1,303 @@
+```cpp
+#include <bits/stdc++.h>
+#define X first
+#define Y second
+#define pii pair<int ,int >
+typedef long long ll;
+using namespace std;
+const int maxn = 1e5+10;
+char ch[4] = {'*','/','+','-'};
+int n;//全局定义
+int pri(string op)///已完成
+{//求符号运算的优先级
+	if(op=="(")return 0;
+	else if(op=="+"||op == "-")return 1;
+	else if(op=="*"||op == "/")return 2;
+}
+vector<string >Polish(string s)///已完成
+{//把基础算式变为一个波兰式
+	stack<string> opstack;//辅助栈
+	vector<string >polish;//逆波兰结果
+	string s1;//temp变量
+	//以下均为板子,参考逆波兰式
+	for(int i =0;i<s.size();++i)
+	{
+		if(s[i]=='('){opstack.push("(");continue;}
+		if(s[i]>='0'&&s[i]<='9')
+		{
+			s1 = "";
+			while(i<s.size()&&((s[i]>='0'&&s[i]<='9')||s[i]=='`'||s[i]=='_') )s1 += s[i++];
+			--i;
+			polish.push_back(s1);
+			continue;
+		}
+		if(s[i]==')')
+		{
+			while(opstack.size())
+			{
+				if(opstack.top()!="(")
+				{
+					polish.push_back(opstack.top());
+					opstack.pop();
+				}
+				else
+				{
+					opstack.pop();
+					break;
+				}
+			}
+		}
+		else
+		{
+			s1 = s[i];
+			while(opstack.size()&&pri(opstack.top())>=pri(s1))
+			{
+				polish.push_back(opstack.top());
+				opstack.pop();
+			}
+			opstack.push(s1);
+		}
+	}
+	while(opstack.size())
+	{
+		polish.push_back(opstack.top());
+		opstack.pop();
+	}
+	return polish;
+}
+pii cal(pii a, pii b,char op)///已完成
+{//对两个分数进行求解;
+	pii res;
+	if(op=='+')res = {a.X*b.Y + a.Y*b.X,a.Y*b.Y};
+	else if(op=='-')res = {a.X*b.Y - a.Y*b.X,a.Y*b.Y};
+	else if(op=='*')res = {a.X*b.X,a.Y*b.Y};
+	else if(op=='/')res = {a.X*b.Y,a.Y*b.X};
+	if(res.X==0)return (pii ){0,1};
+	if(res.Y==0)return (pii ){0,0};
+	int g = __gcd(res.X,res.Y);//通分
+	return (pii ){res.X/g,res.Y/g};//通分
+}
+pii func(vector<string >P)///已完成
+{//对逆波兰式P进行计算;
+	stack<pii >st;//存数;
+	int n = P.size();
+	//计算逆波兰的板子
+	for(int i =0;i<n;++i)
+	{
+		if(P[i]=="+"||P[i]=="-"||P[i]=="*"||P[i]=="/")
+		{
+			pii a= st.top();st.pop();
+			pii b = st.top();st.pop();
+			st.push(cal(b,a,P[i][0]) );
+		}
+		else
+		{
+			pii temp ;
+			if(P[i].size()==1)
+			{
+				temp = {P[i][0]-'0',1} ;
+			}
+			else if(P[i][1]=='`')
+			{
+				temp = {P[i][2]-'0'+(P[i][4]-'0')*(P[i][0]-'0'),P[i][4]-'0'};
+			}
+			else if(P[i][1]=='_')
+			{
+				temp = {P[i][0]-'0',P[i][2]-'0'};
+			}
+			int g = __gcd(temp.X,temp.Y);
+			st.push((pii ){temp.X/g,temp.Y/g});
+		}
+		//printf("%d %d %d\n",st.size(),st.top().X,st.top().Y);
+	}
+	return st.top();
+}
+int f(int n)///已完成
+{//生成一个正整数 在[0,n]范围内;
+	return 1ll*rand()*998244353%(n+1);
+}
+string p(int n)///已完成
+{//返回一个数据范围在[0,n]之间的真分数;
+	int num = f(n);
+	string s ="";
+	if(num) {s+='0'+num;s+='`';}
+	num = f(n); s+='0'+num;
+	s+='_';
+	num = max(num+f(n-num),1); s+='0'+num;
+	return s;
+}
+string get_num(int n)///已完成
+{//返回取值[0,n]的整数string单元或者真分数单元
+	int op = f(1);
+	string res = "";
+	if(n==0)op=1;//太小啦,不能搞分数
+	if(op)return res+='0'+f(n);
+	else return p(n);
+}
+void in(string & s,int n)///已完成
+{//生成一个[0,n]之间的数压入s中, 并把num返回;
+	string rem;
+	s+=  (rem = get_num(n));
+	//cout<<rem<<"*****"<<endl;
+}
+string func(int c)///已完成
+{//生成具有c个运算符的算式, 并返回string串
+	if(c==1)
+	{//最小单元;
+		string s = "";
+		in(s,n); s+=ch[f(3)]; in(s,n);
+		return s;
+	}
+	else if(c==2)
+	{
+		int ex = f(2);//分割多少个额外的数打上括号
+		string s = "";
+		if(ex==0)
+		{//后两个组成括号
+			in(s,n);
+			s+=ch[f(3)];  s+='(';
+			s+=func(1); s+=')';
+		}
+		else if(ex = 1)
+		{
+			s+='(';
+			s+=func(1); s+=')';
+			s+=ch[f(3)];  in(s,n);
+		}
+		else {in(s,n);s+=ch[f(3)];in(s,n);s+=ch[f(3)];in(s,n);}
+		return s;
+
+	}
+	else
+	{
+		int ex = f(3);//分割多少个额外的数打上括号
+		string s = "";
+		if(ex==0)
+		{
+			in(s,n);s+=ch[f(3)];
+			s+='(';s+=func(2);s+=')';
+		}
+		else if(ex==1)
+		{
+			s+='(';s+=func(1);s+=')';
+			s+=ch[f(3)];
+			if(f(1)){s+='(';s+=func(1);s+=')';}
+			else s+=func(1);
+		}
+		else if(ex==2)
+		{
+			s+='(';s+=func(2);s+=')';
+			s+=ch[f(3)];
+			in(s,n);
+		}
+		else
+		{
+			in(s,n);s+=ch[f(3)];
+			in(s,n);s+=ch[f(3)];
+			in(s,n);s+=ch[f(3)];
+			in(s,n);
+		}
+		return s;
+	}
+
+}
+void output(string s)///已完成
+{//为了不影响计算,使用额外的输出函数对算式串美化输出;
+	//printf("*****");
+	for(int i =0;i<s.size();++i)
+	{
+		if(s[i]=='+'||s[i]=='*'||s[i]=='-'||s[i]=='/'){printf(" %c ",s[i]);}
+		else printf("%c",s[i]);
+	}
+	printf(" = \n");
+}
+void out(pii ans)///已完成
+{//以真分数形式输出一个答案;
+	if(ans.Y==1)printf("%d\n",ans.X);
+	else
+	{
+		if(ans.X%ans.Y<0)
+		{
+			printf("%d`",ans.X/ans.Y-1);
+			printf("%d_%d\n",ans.X%ans.Y+ans.Y,ans.Y);
+			return ;
+		}
+		if(ans.X/ans.Y)printf("%d`",ans.X/ans.Y);
+		printf("%d_%d\n",ans.X%ans.Y,ans.Y);
+	}
+}
+map<pii ,bool>m;
+vector<pii >g;
+void make()///已完成
+{//生成题目文件和正确答案文件
+	printf("输入数据组数和数据范围n:");
+	int t;scanf("%d %d",&t,&n);n--;
+	while(n<0||n>9){printf("n的数据范围超限了");scanf("%d",&n);n--;}
+	freopen("Exercises.txt","w",stdout);
+	for(int i=1;i<=t;++i)
+	{
+		printf("%d: ",i);
+		//使用map来检查当前答案是否为负数或者已经存在过;
+		while(1)
+		{
+			string s = func(f(2)+1);//生成题目
+			pii ans = func(Polish(s) );//计算题目并求出答案
+			if(ans.Y<0){ans.X=-ans.X;ans.Y=-ans.Y;}
+			if(m[ans]||ans.Y==0||ans.X<0)continue;//若已存在过||答案无意义||答案为负数则重新生成;
+			output(s);//输出题目
+			m[ans]=1;
+			g.push_back(ans);//把答案存起来
+			break;
+		}
+	}
+	freopen("correct.txt","w",stdout);
+	for(int i =0;i<g.size();++i)out(g[i]);//最后压入正确答案文件;
+}
+map<string ,int > v;
+vector<int > yes,no;
+void check()///已完成
+{// 检查目录下的输入文件和答案文件,把结果输出到grade
+	freopen("Answers.txt","r",stdin);
+	int cnt =0;
+	string s ;
+	while(cin>>s)
+	{
+		//cout<<cnt<<' '<<s<<' '<<s.size()<<endl;
+		++cnt;
+		v[s] = cnt;
+	}
+	fclose(stdin);
+	freopen("correct.txt","r",stdin);
+	cnt =0;
+	char ks[20] = "";
+	while(~scanf("%s",ks))
+	{
+		s = "";int n = strlen(ks);
+		for(int i =0;i<n;++i)s+=ks[i];
+		//cout<<cnt<<' '<<s<<' '<<s.size()<<endl;
+		++cnt;
+		if(v[s]==cnt)yes.push_back(cnt);
+		else no.push_back(cnt);;
+	}
+	//printf("09");
+	freopen("Grade.txt","w",stdout);
+	printf("Correct: %d (",yes.size());
+	for(int i =0;i<yes.size();++i)printf(", %d"+(i==0),yes[i]);
+	printf(")\r");
+	printf("Wrong: %d (",no.size());
+	for(int i =0;i<no.size();++i)printf(", %d"+(i==0),no[i]);
+	printf(")\r");
+}
+int main()
+{
+	srand(time(0));//初始化;
+	printf("输入指令1表示生成数据,输入指令0表示计算目录下的答案文件和题目是否正确\n");
+	int op = 0;
+	scanf("%d",&op);
+	if(op)make();
+	else check();
+
+    return 0;
+}
+
+```
